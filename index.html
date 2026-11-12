@@ -54,17 +54,36 @@
   <section id="screen-lock" class="screen card" hidden>
     <h2>ロック中</h2>
     <p id="lock-message">パスワードを入力すると記録を表示します。</p>
+    <div id="passkey-unlock-box" hidden>
+      <button type="button" id="passkey-unlock" class="btn btn-primary btn-block btn-big">顔認証・指紋で解除</button>
+      <p id="passkey-unlock-error" class="error" role="alert"></p>
+      <p class="or-line"><span>または パスワードで解除</span></p>
+    </div>
     <form id="unlock-form" novalidate>
       <label for="unlock-pw">パスワード</label>
       <div class="pw-row">
-        <input id="unlock-pw" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+        <input id="unlock-pw" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required>
         <button type="button" id="unlock-show" class="btn btn-ghost" aria-pressed="false" aria-controls="unlock-pw">表示</button>
       </div>
       <p class="note">入力して Enter キーを押しても解除できます。</p>
       <p id="caps-warning" class="note" role="status" hidden>⚠ Caps Lock（大文字固定）がオンになっています。</p>
       <p id="unlock-error" class="error" role="alert"></p>
-      <button type="submit" id="unlock-submit" class="btn btn-primary btn-block">ロックを解除</button>
+      <button type="submit" id="unlock-submit" class="btn btn-ghost btn-block">パスワードで解除</button>
     </form>
+
+    <details class="forgot" id="forgot">
+      <summary>パスワードを忘れたとき</summary>
+      <p>パスワードは誰にも再発行できません。まず次を確かめてください。</p>
+      <ul>
+        <li>iPhone・Mac の「パスワード」アプリで、このサイト（github.io など）の保存がないか</li>
+        <li>大文字・小文字、全角・半角のちがい（「表示」で確かめられます）</li>
+      </ul>
+      <p>それでも開けないときは、<strong>この端末の家計簿データを消して、最初からやり直せます。</strong>消した記録は元に戻せません（バックアップファイルがあれば、そのときのパスワードで復元できます）。ほかの端末のデータは消えません。</p>
+      <label for="reset-confirm">消す場合は「けす」と入力してください</label>
+      <input id="reset-confirm" type="text" autocomplete="off" autocapitalize="off" autocorrect="off">
+      <p id="reset-error" class="error" role="alert"></p>
+      <button type="button" id="reset-button" class="btn btn-danger btn-block">この端末の家計簿データを消す</button>
+    </details>
   </section>
 
   <!-- メイン画面 -->
@@ -160,6 +179,26 @@
       <p id="restore-error" class="error" role="alert"></p>
       <button type="button" id="restore-button" class="btn btn-ghost">バックアップから復元する</button>
       <p id="restore-status" class="ok" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="passkey-title" id="passkey-card">
+      <h3 id="passkey-title">顔認証・指紋で解除する</h3>
+      <p id="passkey-status"></p>
+      <div id="passkey-step1" hidden>
+        <p>はじめに、確認のためパスワードを入力してください。パスワードはこれからも予備として使えます。</p>
+        <label for="passkey-pw">パスワード</label>
+        <input id="passkey-pw" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" id="passkey-next" class="btn btn-primary">次へ</button>
+      </div>
+      <div id="passkey-step2" hidden>
+        <p>下のボタンを押すと、顔認証（Face ID）や指紋（Touch ID）の確認が出ます。</p>
+        <button type="button" id="passkey-register" class="btn btn-primary btn-big">顔認証・指紋を登録する</button>
+      </div>
+      <p id="passkey-error" class="error" role="alert"></p>
+      <p id="passkey-ok" class="ok" role="status"></p>
+      <button type="button" id="passkey-start" class="btn btn-primary" hidden>設定する</button>
+      <button type="button" id="passkey-remove" class="btn btn-danger-ghost" hidden>顔認証・指紋での解除をやめる</button>
+      <p class="note">しくみ：端末のパスキー（顔や指紋で使う鍵。iPhone・Mac では iCloud キーチェーンに保存）を使います。家計簿の記録そのものは端末の外に出ません。</p>
     </section>
 
     <section class="card" aria-labelledby="install-title" id="install-help">

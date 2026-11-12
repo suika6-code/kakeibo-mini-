@@ -57,13 +57,25 @@
       show('screen-env');
       return;
     }
-    show(S.hasVault() ? 'screen-lock' : 'screen-setup');
-    focusFirst();
+    if (S.hasVault()) {
+      show('screen-lock');
+      updateLockScreen();
+    } else {
+      show('screen-setup');
+      $('setup-pw').focus();
+    }
   }
 
-  function focusFirst() {
-    const el = S.hasVault() ? $('unlock-pw') : $('setup-pw');
-    if (el) el.focus();
+  // ロック画面：顔認証を登録済みなら、そのボタンをいちばん上に出す
+  function updateLockScreen() {
+    const pk = S.hasPasskey();
+    $('passkey-unlock-box').hidden = !pk;
+    setText('passkey-unlock-error', '');
+    $('reset-confirm').value = '';
+    setText('reset-error', '');
+    $('forgot').open = false;
+    if (pk) $('passkey-unlock').focus();
+    else $('unlock-pw').focus();
   }
 
   // ---------- 初回設定 ----------
@@ -130,8 +142,141 @@
     resetEntryForm();
     show('screen-main');
     render();
+    renderPasskeyCard();
     resetLockTimer();
   }
+
+  // ---------- 顔認証・指紋で解除 ----------
+  $('passkey-unlock').addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    $('passkey-unlock').disabled = true;
+    setText('passkey-unlock-error', '');
+    try {
+      const loaded = await S.unlockWithPasskey();
+      if (!C.validateData(loaded)) throw new Error('FORMAT');
+      openMain(loaded);
+      $('entry-amount').focus();
+    } catch (err) {
+      S.lock();
+      setText('passkey-unlock-error', err && err.name === 'NotAllowedError'
+        ? 'キャンセルされたか、時間切れになりました。もう一度押すか、パスワードで解除してください。'
+        : '顔認証・指紋では開けませんでした。パスワードで解除してください。記録は消えていません。');
+    } finally {
+      busy = false;
+      $('passkey-unlock').disabled = false;
+    }
+  });
+
+  function hidePasskeySteps() {
+    $('passkey-step1').hidden = true;
+    $('passkey-step2').hidden = true;
+    $('passkey-pw').value = '';
+    setText('passkey-error', '');
+  }
+
+  async function renderPasskeyCard() {
+    hidePasskeySteps();
+    $('passkey-start').hidden = true;
+    $('passkey-remove').hidden = true;
+    if (S.hasPasskey()) {
+      setText('passkey-status', '✓ 設定済みです。ロック画面の「顔認証・指紋で解除」で開けます。');
+      $('passkey-remove').hidden = false;
+      return;
+    }
+    const ok = await S.isPasskeySupported();
+    if (!S.isUnlocked()) return;
+    if (ok) {
+      setText('passkey-status', 'この端末では、顔認証（Face ID）や指紋（Touch ID）で開けるように設定できます。');
+      $('passkey-start').hidden = false;
+    } else if (S.isIpAddressHost()) {
+      setText('passkey-status', 'この開き方（' + location.host + '）では使えません。公開版（github.io）か、http://localhost:8000/ で開くと使えます。');
+    } else {
+      setText('passkey-status', 'この端末・ブラウザでは使えません（iPhone は iOS 18 以降の Safari、Mac は macOS 15 以降の Safari か Chrome で使えます）。');
+    }
+  }
+
+  $('passkey-start').addEventListener('click', () => {
+    setText('passkey-ok', '');
+    $('passkey-start').hidden = true;
+    $('passkey-step1').hidden = false;
+    $('passkey-pw').focus();
+  });
+
+  async function passkeyNext() {
+    if (busy) return;
+    const pw = $('passkey-pw').value;
+    if (!pw) { setText('passkey-error', 'パスワードを入力してください。'); return; }
+    busy = true;
+    setText('passkey-error', '確認中です…');
+    try {
+      await S.beginPasskeyEnroll(pw);
+      $('passkey-pw').value = '';
+      setText('passkey-error', '');
+      $('passkey-step1').hidden = true;
+      $('passkey-step2').hidden = false;
+      $('passkey-register').focus();
+    } catch (err) {
+      setText('passkey-error', 'パスワードが違います。');
+      $('passkey-pw').select();
+    } finally {
+      busy = false;
+    }
+  }
+  $('passkey-next').addEventListener('click', passkeyNext);
+  $('passkey-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); passkeyNext(); } });
+
+  $('passkey-register').addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    setText('passkey-error', '');
+    try {
+      await S.finishPasskeyEnroll(); // ボタンを押した直後に呼ぶ（端末の確認が出る）
+      await renderPasskeyCard();
+      setText('passkey-ok', '登録しました。次からはロック画面の「顔認証・指紋で解除」で開けます。');
+    } catch (err) {
+      const m = err && err.message;
+      if (m === 'AGAIN') {
+        setText('passkey-error', 'もう一度このボタンを押すと、登録が完了します。');
+      } else if (m === 'UNSUPPORTED') {
+        setText('passkey-error', 'この端末では顔認証・指紋での解除に対応していませんでした。これまでどおりパスワードで解除してください。');
+        await renderPasskeyCard();
+      } else if (m === 'EXPIRED') {
+        setText('passkey-error', '時間がたったので、もう一度パスワードの確認からやり直してください。');
+        await renderPasskeyCard();
+      } else if (err && err.name === 'NotAllowedError') {
+        setText('passkey-error', 'キャンセルされたか、時間切れになりました。もう一度押してください。');
+      } else {
+        setText('passkey-error', '登録できませんでした。（' + ((err && err.name) || 'エラー') + '）');
+      }
+    } finally {
+      busy = false;
+    }
+  });
+
+  $('passkey-remove').addEventListener('click', async () => {
+    const ok = await confirmDialog('顔認証・指紋での解除をやめますか？ これからはパスワードで解除します。（iPhone・Mac の「パスワード」アプリに残る鍵は、そちらで削除できます）', 'やめる');
+    if (!ok || !S.isUnlocked()) return;
+    S.removePasskey();
+    await renderPasskeyCard();
+    setText('passkey-ok', '顔認証・指紋での解除をやめました。');
+  });
+
+  // ---------- パスワードを忘れたとき：この端末のデータを消す ----------
+  $('reset-button').addEventListener('click', async () => {
+    if ($('reset-confirm').value.trim() !== 'けす') {
+      setText('reset-error', '消す場合は「けす」と入力してください。');
+      return;
+    }
+    setText('reset-error', '');
+    const ok = await confirmDialog('この端末の家計簿の記録・予算をすべて消します。元には戻せません。本当に消しますか？', '消す');
+    if (!ok) return;
+    S.resetVault();
+    data = null;
+    $('reset-confirm').value = '';
+    show('screen-setup');
+    $('setup-pw').focus();
+  });
 
   // ---------- ロック ----------
   function lockNow(reason) {
@@ -152,9 +297,11 @@
     setText('unlock-error', '');
     setPasswordVisible(false);
     $('caps-warning').hidden = true;
+    hidePasskeySteps();
+    setText('passkey-ok', '');
     show('screen-lock');
     $('unlock-pw').value = '';
-    $('unlock-pw').focus(); // すぐ入力できるように
+    updateLockScreen(); // すぐ解除できるように
   }
 
   // パスワードの表示／非表示

@@ -145,6 +145,14 @@ code { background: #eee; padding: 1px 5px; border-radius: 4px; font-size: 0.9em;
 .pw-row .btn { flex-shrink: 0; }
 #unlock-submit:disabled { opacity: 0.6; cursor: wait; }
 
+/* 顔認証ボタン・パスワード忘れ */
+.btn-big { min-height: 60px; font-size: 1.15rem; }
+.or-line { text-align: center; color: var(--ink-2); font-size: 0.9rem; margin: 16px 0 0; }
+.forgot { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 12px; }
+.forgot summary { cursor: pointer; color: var(--primary); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.forgot ul { padding-left: 1.2em; }
+#passkey-card .btn { margin-top: 12px; }
+
 hr { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
 
 dialog { border: none; border-radius: var(--radius); padding: 20px; max-width: 460px; width: calc(100% - 24px); }

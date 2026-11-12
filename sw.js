@@ -4,7 +4,7 @@
 // ・このアプリ自身（同じ住所）のファイル以外は一切取りに行かない
 'use strict';
 
-const VERSION = 'kakeibo-mini-v3';
+const VERSION = 'kakeibo-mini-v4';
 const FILES = [
   './',
   './index.html',
