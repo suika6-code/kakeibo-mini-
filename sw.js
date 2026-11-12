@@ -4,20 +4,20 @@
 // ・このアプリ自身（同じ住所）のファイル以外は一切取りに行かない
 'use strict';
 
-const VERSION = 'kakeibo-mini-v2';
+const VERSION = 'kakeibo-mini-v3';
 const FILES = [
   './',
   './index.html',
   './style.css',
-  './js/calc.js',
-  './js/crypto-store.js',
-  './js/app.js',
-  './js/pwa.js',
+  './calc.js',
+  './crypto-store.js',
+  './app.js',
+  './pwa.js',
   './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/apple-touch-icon.png',
-  './icons/favicon-32.png',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon.png',
+  './favicon-32.png',
 ];
 
 self.addEventListener('install', (event) => {
