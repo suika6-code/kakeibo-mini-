@@ -1,0 +1,169 @@
+/* 外部フォントは使わず、パソコン・スマホに入っている文字を使う */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --ink: #1f2328;
+  --ink-2: #4b5260;
+  --line: #d9d6cc;
+  --primary: #1f5fa8;
+  --primary-ink: #ffffff;
+  --primary-soft: #e6eef8;
+  --income: #1d6b3a;
+  --expense: #9a3412;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --ok: #1d6b3a;
+  --bar: #2f6db5;
+  --radius: 12px;
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0 12px 40px; }
+[hidden] { display: none !important; }
+
+.app-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  max-width: 1040px; margin: 0 auto; padding: 12px 0;
+}
+h1 { font-size: 1.35rem; margin: 0; }
+h2 { font-size: 1.3rem; margin: 0 0 8px; }
+h3 { font-size: 1.1rem; margin: 0 0 12px; }
+.badge { font-size: 0.7rem; background: var(--primary-soft); color: var(--primary); padding: 2px 8px; border-radius: 99px; vertical-align: middle; }
+
+.screen { max-width: 1040px; margin: 0 auto; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px; margin: 0 0 16px;
+}
+#screen-setup, #screen-lock, #screen-env { max-width: 520px; }
+
+label { display: block; font-weight: 600; margin: 12px 0 4px; }
+label.check { font-weight: 400; display: flex; gap: 8px; align-items: center; }
+label.check input { width: 24px; height: 24px; }
+input[type="text"], input[type="password"], input[type="date"], input[type="file"] {
+  width: 100%; font: inherit; font-size: 1.05rem; padding: 10px 12px; min-height: 52px;
+  border: 1.5px solid #9aa0a6; border-radius: 10px; background: #fff; color: var(--ink);
+}
+input:focus-visible, button:focus-visible { outline: 3px solid #f2b705; outline-offset: 2px; }
+.big-input { font-size: 1.6rem !important; font-weight: 700; letter-spacing: 0.02em; }
+
+.btn {
+  font: inherit; font-size: 1.05rem; font-weight: 700; min-height: 52px; padding: 10px 18px;
+  border-radius: 10px; border: 1.5px solid transparent; cursor: pointer;
+}
+.btn-primary { background: var(--primary); color: var(--primary-ink); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: var(--surface); color: var(--primary); border-color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger-ghost { background: var(--surface); color: var(--danger); border-color: var(--danger); }
+.btn-link { background: none; border: none; color: var(--primary); text-decoration: underline; font: inherit; cursor: pointer; min-height: 44px; }
+.btn-small { min-height: 44px; padding: 6px 14px; font-size: 0.95rem; }
+.btn-block { width: 100%; margin-top: 16px; }
+.btn-grow { flex: 1; }
+
+.row { display: flex; gap: 8px; align-items: stretch; margin-top: 12px; }
+.grow { flex: 1; }
+.center { text-align: center; }
+.note { color: var(--ink-2); font-size: 0.9rem; }
+.error { color: var(--danger); font-weight: 600; margin: 4px 0 0; min-height: 0; }
+.error:empty, .ok:empty { display: none; }
+.ok { color: var(--ok); font-weight: 600; margin: 8px 0 0; }
+.warning { background: var(--danger-soft); border-left: 5px solid var(--danger); padding: 8px 12px; border-radius: 8px; }
+.warning p { margin: 6px 0; }
+.steps li { margin-bottom: 6px; }
+code { background: #eee; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 月の切り替え */
+.month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.month-nav h2 { margin: 0; text-align: center; font-size: 1.4rem; }
+.month-nav .btn { padding: 8px 12px; font-size: 0.95rem; }
+
+/* まとめ */
+.summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 4px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+.stat-label { display: block; font-size: 0.9rem; color: var(--ink-2); }
+.stat-value { display: block; font-size: 1.45rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#stat-remaining { border-width: 2px; border-color: var(--primary); }
+#stat-remaining.is-over { border-color: var(--danger); background: var(--danger-soft); }
+#stat-remaining.is-over .stat-value { color: var(--danger); }
+.over { background: var(--danger-soft); color: var(--danger); font-weight: 800; padding: 10px 14px; border-radius: 10px; margin: 10px 0 0; font-size: 1.1rem; }
+
+/* 収入・支出の切り替え */
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.type-toggle label { margin: 0; }
+.type-toggle input { position: absolute; opacity: 0; }
+.type-toggle span {
+  display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 10px;
+  border: 2px solid var(--line); font-size: 1.15rem; cursor: pointer; background: var(--surface);
+}
+.type-toggle input[value="expense"]:checked + span { background: var(--expense); border-color: var(--expense); color: #fff; }
+.type-toggle input[value="income"]:checked + span { background: var(--income); border-color: var(--income); color: #fff; }
+.type-toggle input:focus-visible + span { outline: 3px solid #f2b705; outline-offset: 2px; }
+
+/* カテゴリのボタン */
+.chips-field { border: none; padding: 0; margin: 12px 0 0; }
+.chips-field legend { font-weight: 600; padding: 0; margin-bottom: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 1rem; min-height: 48px; padding: 6px 14px; border-radius: 99px;
+  border: 1.5px solid #9aa0a6; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; }
+.chip[aria-pressed="true"]::before { content: "✓ "; }
+
+/* 棒グラフ（1系列なので凡例なし。値は文字でも表示） */
+.bar-chart { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: 6.5em 1fr; grid-template-areas: "label value" "track track"; gap: 2px 8px; align-items: center; }
+.bar-label { grid-area: label; font-weight: 600; }
+.bar-value { grid-area: value; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+.bar-track { grid-area: track; height: 14px; background: #eceae4; border-radius: 4px; overflow: hidden; }
+.bar { display: block; height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; }
+.bar-row:hover .bar { filter: brightness(1.15); }
+
+/* 記録の一覧 */
+.record-list { list-style: none; margin: 0; padding: 0; }
+.record { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.record:last-child { border-bottom: none; }
+.record-main { min-width: 0; }
+.record-date { color: var(--ink-2); margin-right: 8px; font-variant-numeric: tabular-nums; }
+.record-cat { font-weight: 600; }
+.record-amount { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.record.income .record-amount { color: var(--income); }
+.record.expense .record-amount { color: var(--expense); }
+.record-memo { color: var(--ink-2); font-size: 0.9rem; overflow-wrap: anywhere; }
+.record-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* パスワード欄と「表示」ボタンを横に並べる */
+.pw-row { display: flex; gap: 8px; }
+.pw-row input { flex: 1; min-width: 0; }
+.pw-row .btn { flex-shrink: 0; }
+#unlock-submit:disabled { opacity: 0.6; cursor: wait; }
+
+hr { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+
+dialog { border: none; border-radius: var(--radius); padding: 20px; max-width: 460px; width: calc(100% - 24px); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+
+/* 広い画面では2列にする */
+@media (min-width: 820px) {
+  .summary { grid-template-columns: repeat(4, 1fr); }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+}
+@media (max-width: 819px) {
+  .columns { margin-top: 16px; }
+}
+.app-header .btn, .badge { white-space: nowrap; }
+@media (max-width: 600px) {
+  h1 { font-size: 1.1rem; }
+  .app-header .btn { min-height: 44px; padding: 6px 12px; font-size: 0.95rem; }
+}
+@media (max-width: 380px) {
+  .month-nav .btn { font-size: 0.85rem; padding: 6px 8px; }
+  .stat-value { font-size: 1.2rem; }
+}

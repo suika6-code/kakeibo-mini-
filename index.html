@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- CSP: このアプリ自身のファイル以外は読み込まず、どこにも通信しない（connect-src 'none'）ようブラウザに指示する -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; manifest-src 'self'; media-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>かんたん家計簿（試作品）</title>
+  <meta name="theme-color" content="#1f5fa8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>かんたん家計簿 <span class="badge">試作品</span></h1>
+    <button type="button" id="lock-button" class="btn btn-ghost" hidden>ロックする</button>
+  </header>
+
+  <!-- 暗号化が使えない環境の案内 -->
+  <section id="screen-env" class="screen card" hidden>
+    <h2>この開き方では使えません</h2>
+    <p id="env-reason"></p>
+    <p>記録を暗号化せずに保存することはしません。次の方法で開き直してください。</p>
+    <ol class="steps">
+      <li>このアプリのフォルダにある <code>start-windows.bat</code>（Windows）または <code>start-mac.command</code>（Mac）を開く</li>
+      <li>ブラウザで <code>http://127.0.0.1:8000/</code> を開く</li>
+    </ol>
+    <p class="note">127.0.0.1 は「このパソコン自身」を指す住所です。外部には公開されません。詳しくは README.md を見てください。</p>
+  </section>
+
+  <!-- 初回：パスワード設定 -->
+  <section id="screen-setup" class="screen card" hidden>
+    <h2>はじめに：解除用パスワードを決める</h2>
+    <div class="warning" role="note">
+      <p><strong>パスワードを忘れると、記録もバックアップも二度と開けません。</strong></p>
+      <p>記録はこのパスワードで暗号化（鍵がないと読めない形に）して保存します。パスワードはどこにも保存しないため、運営者を含め誰も再発行・復元できません。紙に書くなどして安全に控えてください。</p>
+    </div>
+    <form id="setup-form" novalidate>
+      <label for="setup-pw">パスワード（10文字以上）</label>
+      <input id="setup-pw" type="password" autocomplete="new-password" required minlength="10">
+      <label for="setup-pw2">確認のためもう一度</label>
+      <input id="setup-pw2" type="password" autocomplete="new-password" required>
+      <label class="check"><input id="setup-agree" type="checkbox"> 忘れると復元できないことを理解しました</label>
+      <p id="setup-error" class="error" role="alert"></p>
+      <button type="submit" class="btn btn-primary btn-block">パスワードを設定して始める</button>
+    </form>
+  </section>
+
+  <!-- ロック画面 -->
+  <section id="screen-lock" class="screen card" hidden>
+    <h2>ロック中</h2>
+    <p id="lock-message">パスワードを入力すると記録を表示します。</p>
+    <form id="unlock-form" novalidate>
+      <label for="unlock-pw">パスワード</label>
+      <div class="pw-row">
+        <input id="unlock-pw" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+        <button type="button" id="unlock-show" class="btn btn-ghost" aria-pressed="false" aria-controls="unlock-pw">表示</button>
+      </div>
+      <p class="note">入力して Enter キーを押しても解除できます。</p>
+      <p id="caps-warning" class="note" role="status" hidden>⚠ Caps Lock（大文字固定）がオンになっています。</p>
+      <p id="unlock-error" class="error" role="alert"></p>
+      <button type="submit" id="unlock-submit" class="btn btn-primary btn-block">ロックを解除</button>
+    </form>
+  </section>
+
+  <!-- メイン画面 -->
+  <main id="screen-main" class="screen" hidden>
+    <nav class="month-nav" aria-label="月の切り替え">
+      <button type="button" id="prev-month" class="btn btn-ghost" aria-label="前の月">◀ 前の月</button>
+      <h2 id="month-label" aria-live="polite"></h2>
+      <button type="button" id="next-month" class="btn btn-ghost" aria-label="次の月">次の月 ▶</button>
+    </nav>
+    <p class="center"><button type="button" id="this-month" class="btn btn-link">今月に戻る</button></p>
+
+    <section class="summary" aria-label="月のまとめ">
+      <div class="stat"><span class="stat-label" id="label-income">今月の収入</span><span class="stat-value" id="sum-income"></span></div>
+      <div class="stat"><span class="stat-label" id="label-expense">今月の支出</span><span class="stat-value" id="sum-expense"></span></div>
+      <div class="stat"><span class="stat-label" id="label-budget">今月の予算</span><span class="stat-value" id="sum-budget"></span></div>
+      <div class="stat" id="stat-remaining"><span class="stat-label">残り予算</span><span class="stat-value" id="sum-remaining"></span></div>
+    </section>
+    <p id="over-message" class="over" role="status" hidden></p>
+    <p class="note center">残り予算 ＝ その月の予算 − その月の支出合計（収入は含めません）</p>
+
+    <div class="columns">
+      <div>
+        <section class="card" aria-labelledby="entry-title">
+          <h3 id="entry-title">収入・支出を記録する</h3>
+          <form id="entry-form" novalidate>
+            <div class="type-toggle" role="radiogroup" aria-label="収入か支出か">
+              <label><input type="radio" name="type" value="expense" checked><span>支出</span></label>
+              <label><input type="radio" name="type" value="income"><span>収入</span></label>
+            </div>
+            <label for="entry-amount">金額（円）</label>
+            <input id="entry-amount" type="text" inputmode="numeric" autocomplete="off" placeholder="例：1500" class="big-input">
+            <p id="err-amount" class="error" role="alert"></p>
+
+            <fieldset class="chips-field">
+              <legend>カテゴリ</legend>
+              <div id="category-chips" class="chips"></div>
+            </fieldset>
+            <p id="err-category" class="error" role="alert"></p>
+
+            <label for="entry-date">日付</label>
+            <input id="entry-date" type="date">
+            <p id="err-date" class="error" role="alert"></p>
+
+            <label for="entry-memo">メモ（任意）</label>
+            <input id="entry-memo" type="text" maxlength="200" autocomplete="off" placeholder="例：スーパー">
+            <p id="err-memo" class="error" role="alert"></p>
+
+            <div class="row">
+              <button type="submit" id="entry-submit" class="btn btn-primary btn-grow">記録する</button>
+              <button type="button" id="entry-cancel" class="btn btn-ghost" hidden>編集をやめる</button>
+            </div>
+            <p id="entry-status" class="ok" role="status"></p>
+          </form>
+        </section>
+
+        <section class="card" aria-labelledby="budget-title">
+          <h3 id="budget-title">この月の予算</h3>
+          <form id="budget-form" class="row" novalidate>
+            <label for="budget-amount" class="sr-only">予算額（円）</label>
+            <input id="budget-amount" type="text" inputmode="numeric" autocomplete="off" placeholder="例：50000" class="grow">
+            <button type="submit" class="btn btn-primary">予算を設定</button>
+          </form>
+          <p id="err-budget" class="error" role="alert"></p>
+          <p id="budget-status" class="ok" role="status"></p>
+        </section>
+      </div>
+
+      <div>
+        <section class="card" aria-labelledby="chart-title">
+          <h3 id="chart-title">カテゴリ別の支出</h3>
+          <div id="category-chart" class="bar-chart"></div>
+          <p id="chart-empty" class="note">この月の支出はまだありません。</p>
+        </section>
+
+        <section class="card" aria-labelledby="list-title">
+          <h3 id="list-title">この月の記録</h3>
+          <ul id="record-list" class="record-list"></ul>
+          <p id="list-empty" class="note">この月の記録はまだありません。</p>
+        </section>
+      </div>
+    </div>
+
+    <section class="card" aria-labelledby="backup-title">
+      <h3 id="backup-title">バックアップと復元</h3>
+      <p>バックアップファイルは、いまのパスワードで暗号化されます。復元するときは、<strong>バックアップを作ったときのパスワード</strong>が必要です。</p>
+      <button type="button" id="backup-export" class="btn btn-primary">暗号化バックアップを書き出す</button>
+      <p id="backup-status" class="ok" role="status"></p>
+      <hr>
+      <label for="restore-file">復元するバックアップファイル</label>
+      <input id="restore-file" type="file" accept=".json,application/json">
+      <label for="restore-pw">そのバックアップを作ったときのパスワード</label>
+      <input id="restore-pw" type="password" autocomplete="off">
+      <p id="restore-error" class="error" role="alert"></p>
+      <button type="button" id="restore-button" class="btn btn-ghost">バックアップから復元する</button>
+      <p id="restore-status" class="ok" role="status"></p>
+    </section>
+
+    <section class="card" aria-labelledby="install-title" id="install-help">
+      <h3 id="install-title">アプリとして使う</h3>
+      <p>インストールすると、デスクトップやアプリ一覧のアイコンから開けます。2回目からは起動用ファイル（黒い画面）も不要です。</p>
+      <button type="button" id="install-button" class="btn btn-primary" hidden>アプリとしてインストール</button>
+      <p class="note">ボタンが出ないとき：Chrome / Edge はアドレスバー右端のインストールのマーク、Mac の Safari は「ファイル」→「Dockに追加」から追加できます。</p>
+    </section>
+
+    <p class="note center">15分間操作がないと自動でロックします。記録はこのブラウザの中にだけ、暗号化して保存されます。</p>
+  </main>
+
+  <!-- 確認ダイアログ -->
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <p id="confirm-message"></p>
+      <div class="row">
+        <button value="cancel" class="btn btn-ghost btn-grow">やめる</button>
+        <button value="ok" id="confirm-ok" class="btn btn-danger btn-grow">実行する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/calc.js"></script>
+  <script src="js/crypto-store.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/pwa.js"></script>
+</body>
+</html>
